@@ -13,7 +13,7 @@ Version:             0.5
 Synopsis:            Haskell Interface to Google Directions API
 
 -- A longer description of the package.
--- Description:         
+Description:         An interface to the Google Directions API
 
 -- The license under which the package is released.
 License:             BSD3
@@ -29,7 +29,7 @@ Author:              Favil Orbedios
 Maintainer:          favilo@gmail.com
 
 -- A copyright notice.
--- Copyright:           
+Copyright:           Copyright 2010 Kevin Oberlies <favilo@gmail.com>
 
 Category:            Network
 
@@ -37,7 +37,7 @@ Build-type:          Simple
 
 -- Extra files to be distributed with the package, such as examples or
 -- a README.
--- Extra-source-files:  
+Extra-source-files:  README
 
 -- Constraint on the version of Cabal needed to build this package.
 Cabal-version:       >=1.2
@@ -46,9 +46,15 @@ Cabal-version:       >=1.2
 Library
   -- Modules exported by the library.
   Exposed-modules:     Google.Directions
+  hs-source-dirs:      src
   
   -- Packages needed in order to build this package.
-  -- Build-depends:       
+  Build-depends:       containers
+                    ,  bytestring
+                    ,  dataenc
+                    ,  base > 4
+                    ,  AttoJson
+                    ,  download-curl
   
   -- Modules not exported by this package.
   -- Other-modules:       
