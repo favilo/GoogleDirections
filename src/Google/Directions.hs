@@ -74,7 +74,7 @@ instance Show Avoidable where
     show Highways = "avoid=highways"
 
 showAvoidables [] = ""
-showAvoidables as = "&" ++ show' as
+showAvoidables as = '&':show' as
         where show' [a] = show a
               show' (a:as) = show a ++ showAvoidables as
 
@@ -156,20 +156,14 @@ directions origin dest travelMode
                     Nothing -> ""
                     Just points -> (show points)
                  )
-              ++ "&alternates=" ++ (case alternate of
-                      True -> "true"
-                      False -> "false"
-                      )
-              ++ (showAvoidables avoidables)
+              ++ "&alternates=" ++ if alternate then "true" else "false"
+              ++ showAvoidables avoidables
               ++ (case units of
                       Nothing -> ""
                       Just Imperial -> "&units=imperial"
                       Just Metric   -> "&units=metric"
                  )
-              ++ "&sensor=" ++ (case sensor of
-                      True -> "true"
-                      False -> "false"
-                      )
+              ++ "&sensor=" ++ if sensor then "true" else "false"
     string <- openURI url
     --putStrLn $ show string
     return $ parseDirections string
@@ -306,7 +300,8 @@ parseDuration m = Dur
         JSString s -> s
         _ -> error "text parse failed"
     )
-parseLocation m = ((case m M.! "lat" of
-            JSNumber n -> fromRational n),
-        (case m M.! "lat" of
-            JSNumber n -> fromRational n))
+parseLocation m = 
+       (case m M.! "lat" of
+            JSNumber n -> fromRational n,
+        case m M.! "lat" of
+            JSNumber n -> fromRational n)
