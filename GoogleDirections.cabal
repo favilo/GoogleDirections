@@ -22,14 +22,14 @@ License:             BSD3
 License-file:        LICENSE
 
 -- The package author(s).
-Author:              Favil Orbedios
+Author:              Favil Orbedios <favilo@gmail.com>
 
 -- An email address to which users can send suggestions, bug reports,
 -- and patches.
-Maintainer:          favilo@gmail.com
+Maintainer:          Favil Orbedios <favilo@gmail.com>
 
 -- A copyright notice.
-Copyright:           Copyright 2010 Kevin Oberlies <favilo@gmail.com>
+Copyright:           (c) 2010 Favil Orbedios
 
 Category:            Network
 
@@ -52,7 +52,7 @@ Library
   Build-depends:       containers
                     ,  bytestring
                     ,  dataenc
-                    ,  base > 4
+                    ,  base >=4 && <5
                     ,  AttoJson
                     ,  download-curl
   

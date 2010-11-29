@@ -62,9 +62,9 @@ instance Show Waypoints where
         ++ (if optimize then "optimize:true|"
                      else "")
         ++ showWaypoints points
-            where 
-                showWaypoints [point] = (C.encode (B.unpack point))
-                showWaypoints (p:ps)  = (C.encode (B.unpack p)) ++ "|" ++ (showWaypoints ps)
+            where
+                showWaypoints [point] = C.encode (B.unpack point)
+                showWaypoints (p:ps)  = C.encode (B.unpack p) ++ "|" ++ showWaypoints ps
 
 data Avoidable = Tolls
     | Highways
@@ -76,7 +76,7 @@ instance Show Avoidable where
 showAvoidables [] = ""
 showAvoidables as = "&" ++ show' as
         where show' [a] = show a
-              show' (a:as) = (show a) ++ (showAvoidables as)
+              show' (a:as) = show a ++ showAvoidables as
 
 data Units = Imperial
     | Metric
