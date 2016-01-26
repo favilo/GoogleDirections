@@ -1,5 +1,5 @@
 Name:                GoogleDirections
-Version:             0.3.1
+Version:             0.4
 Synopsis:            Haskell Interface to Google Directions API
 Description:         An interface to the Google Directions API
 License:             BSD3
