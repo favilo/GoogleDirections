@@ -35,15 +35,18 @@ module Google.Directions (
     ) where
 
 import Network.Curl.Download
-import Text.JSON.AttoJSON as JSON
+import Data.Aeson
+import qualified Data.HashMap.Strict as HM
+import Data.Scientific
 import Data.Ratio
-
 import qualified Codec.Binary.Url as C
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Char8 as S
 import qualified Data.Map as M
-
-
+import qualified Data.Vector as V
+import qualified Data.Text as T
+import Data.Text.Encoding
 data TravelMode = Driving 
     | Walking
     | Bicycling
@@ -168,16 +171,17 @@ directions origin dest travelMode
     --putStrLn $ show string
     return $ parseDirections string
 
-parseDirections (Left err) = Left err
+parseDirections (Left err) = Left err 
 parseDirections (Right json) = 
-    case parseJSON json of
+    case eitherDecode' (L.fromStrict json) of
         Left err -> Left err
-        Right jsvalue ->
-            parseDirections' jsvalue
+        Right (value) ->
+            parseDirections' value
 
-parseDirections' jsvalue = case JSON.lookup "status" jsvalue of
-    Just (JSString str) -> Right $ Directions (parseStatus str) 
-            (parseRoutes $ JSON.lookup "routes" jsvalue)
+parseDirections' :: Value -> Either String Directions 
+parseDirections' (Object value) = case HM.lookup "status" value of
+    Just (String str) -> Right $ Directions (parseStatus str) 
+            (parseRoutes $ HM.lookup "routes" value)
     _ -> Left "error, can't parse"
 
 parseStatus "OK" = OK
@@ -189,119 +193,119 @@ parseStatus "OVER_QUERY_LIMIT" = OverQueryLimit
 parseStatus "REQUEST_DENIED" = RequestDenied
 parseStatus _ = UnknownError
 
-parseRoutes :: Maybe JSValue -> [Route]
+parseRoutes :: Maybe Value -> [Route]
 parseRoutes routes = case routes of
-    Just (JSArray jsRoutes) -> map parseRoute jsRoutes
+    Just (Array jsRoutes) -> map parseRoute $ V.toList jsRoutes
     _ -> []
 
-parseRoute route = Route 
-    (case JSON.lookup "summary" route of
-        Just (JSString sum) -> sum
+parseRoute (Object route) = Route 
+    (case HM.lookup "summary" route of
+        Just (String sum) -> encodeUtf8 sum
         _ -> error "summary parse failed"
     ) 
-    (case JSON.lookup "legs" route of
-        Just (JSArray legs) -> map parseLeg legs
+    (case HM.lookup "legs" route of
+        Just (Array legs) -> map parseLeg $ V.toList legs
         _ -> error "legs parse failed"
     )
-    (case JSON.lookup "waypoint_order" route of
-        Just (JSArray warns) -> map 
+    (case HM.lookup "waypoint_order" route of
+        Just (Array warns) -> map 
             (\warn -> 
                 (case warn of
-                    JSNumber n -> numerator n
+                    Number n -> numerator $ toRational n
                     _ -> error "warning parse failed"
                 )
-            ) warns
+            ) $ V.toList warns
         _ -> error "warnings parse failed"
     )
-    (case JSON.lookup "copyrights" route of
-        Just (JSString s) -> s
+    (case HM.lookup "copyrights" route of
+        Just (String s) -> encodeUtf8 s
         _ -> error "copyrights parse failed"
     )
-    (case JSON.lookup "warnings" route of
-        Just (JSArray warns) -> map 
+    (case HM.lookup "warnings" route of
+        Just (Array warns) -> map 
             (\warn -> 
                 (case warn of
-                    JSString s -> s
+                    String s -> encodeUtf8 s
                     _ -> error "warning parse failed"
                 )
-            ) warns
+            ) $ V.toList warns
         _ -> error "warnings parse failed"
     )
 
-parseLeg :: JSValue -> Leg
-parseLeg leg = Leg
-    (case JSON.lookup "steps" leg of
-        Just (JSArray stps) -> map parseStep stps
+parseLeg :: Value -> Leg
+parseLeg (Object leg) = Leg
+    (case HM.lookup "steps" leg of
+        Just (Array stps) -> map parseStep (V.toList stps)
         _ -> error "step parse failed"
     )
-    (case JSON.lookup "distance" leg of
-        Just (JSObject m) -> parseDistance m
+    (case HM.lookup "distance" leg of
+        Just (Object m) -> parseDistance m
         _ -> error "distance parse failed"
     )
-    (case JSON.lookup "duration" leg of
-        Just (JSObject m) -> parseDuration m
+    (case HM.lookup "duration" leg of
+        Just (Object m) -> parseDuration m
         _ -> error "duration parse failed"
     )
-    (case JSON.lookup "start_location" leg of
-        Just (JSObject m) -> parseLocation m
+    (case HM.lookup "start_location" leg of
+        Just (Object m) -> parseLocation m
         _ -> error "start_location parse failed"
     )
-    (case JSON.lookup "end_location" leg of
-        Just (JSObject m) -> parseLocation m
+    (case HM.lookup "end_location" leg of
+        Just (Object m) -> parseLocation m
         _ -> error "end_location parse failed"
     )
-    (case JSON.lookup "start_address" leg of
-        Just (JSString string) -> string
+    (case HM.lookup "start_address" leg of
+        Just (String string) -> encodeUtf8 string
         _ -> error "start_address parse failed"
     )
-    (case JSON.lookup "end_address" leg of
-        Just (JSString string) -> string
+    (case HM.lookup "end_address" leg of
+        Just (String string) -> encodeUtf8 string
         _ -> error "end_address parse failed"
     )
     
-parseStep :: JSValue -> Step
-parseStep step = Step
-    (case JSON.lookup "html_instructions" step of
-        Just (JSString string) -> string
+parseStep :: Value -> Step
+parseStep (Object step) = Step
+    (case HM.lookup "html_instructions" step of
+        Just (String string) -> encodeUtf8 string
         _ -> error "html_instructions parse failed"
     )
-    (case JSON.lookup "distance" step of
-        Just (JSObject m) -> parseDistance m
+    (case HM.lookup "distance" step of
+        Just (Object m) -> parseDistance m
         _ -> error "distance parse failed"
     )
-    (case JSON.lookup "duration" step of
-        Just (JSObject m) -> parseDuration m
+    (case HM.lookup "duration" step of
+        Just (Object m) -> parseDuration m
         _ -> error "duration parse failed"
     )
-    (case JSON.lookup "start_location" step of
-        Just (JSObject m) -> parseLocation m
+    (case HM.lookup "start_location" step of
+        Just (Object m) -> parseLocation m
         _ -> error "start_location parse failed"
     )
-    (case JSON.lookup "end_location" step of
-        Just (JSObject m) -> parseLocation m
+    (case HM.lookup "end_location" step of
+        Just (Object m) -> parseLocation m
         _ -> error "end_location parse failed"
     )
 
 parseDistance m = Dist
-    (case m M.! "value" of
-        JSNumber n -> fromRational n
+    (case m HM.! "value" of
+        Number n ->  toRealFloat n
         _ -> error "value parse failed"
     )
-    (case m M.! "text" of
-        JSString s -> s
+    (case m HM.! "text" of
+        String s -> encodeUtf8 s
         _ -> error "text parse failed"
     )
 parseDuration m = Dur
-    (case m M.! "value" of
-        JSNumber n -> fromRational n
+    (case m HM.! "value" of
+        Number n ->  toRealFloat n
         _ -> error "value parse failed"
     )
-    (case m M.! "text" of
-        JSString s -> s
+    (case m HM.! "text" of
+        String s -> encodeUtf8 s
         _ -> error "text parse failed"
     )
 parseLocation m = 
-       (case m M.! "lat" of
-            JSNumber n -> fromRational n,
-        case m M.! "lat" of
-            JSNumber n -> fromRational n)
+       (case m HM.! "lat" of
+            Number n -> toRealFloat n,
+        case m HM.! "lat" of
+            Number n -> toRealFloat n)
